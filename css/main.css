@@ -16,13 +16,13 @@ body {
 }
 
 .maze__cell {
+    box-sizing: border-box;
     display: inline-block;
     width: 32px;
     height: 32px;
     padding: 0;
-    margin-right: 1px;
-    margin-bottom: 1px;
-    border: 1px solid #eee;
+    margin-right: 4px;
+    border: 1px solid #dfdfdf;
     position: relative;
 }
 
