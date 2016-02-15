@@ -4,45 +4,63 @@
     var PATH = root.maze.PATH;
     var CURRENT = root.maze.CURRENT;
 
-    function checkSteps(nextCoords, maze, finishCoor, waveNum) {
+    function getNextWavePoints(currentPoint, mazeWidth, mazeHeight) {
+        var result = [];
+        /**
+         * Вычисляем точки по горизонтали
+         */
+        for (var x = ((currentPoint.x || 1) - 1); x <= (currentPoint.x < mazeWidth ? currentPoint.x + 1 : mazeWidth); x++) {
+            result.push({
+                x: x,
+                y: currentPoint.y
+            });
+        }
+
+        /**
+         * Вычисляем точки по вертикали
+         */
+        for (var y = ((currentPoint.y || 1) - 1); y <= (currentPoint.y < mazeHeight ? currentPoint.y + 1 : mazeHeight); y++) {
+            result.push({
+                x: currentPoint.x,
+                y: y
+            });
+        }
+        return result;
+    }
+
+    function isValidNextWavePoint(maze, x, y) {
+        var isNotWall = maze[y][x] != WALL;
+        var isNotMe = maze[y][x] != CURRENT;
+        var isEmpty = maze[y][x] == EMPTY;
+        return isNotWall && isNotMe && isEmpty;
+    }
+
+    function analyzePoints(maze, mazeWidth, mazeHeight, points, currentWavewNum) {
         var isFinished = false;
-        var isNotWall, isNotMe, isEmpty;
-        var tmpNextSteps = [];
-        nextCoords.forEach(function (step) {
-            if (step.y == (maze.length - 1)) {
+        var nextPoints = [];
+        var nextWaveNum = currentWavewNum + 1;
+        var nextWavePoints;
+        points.forEach(function (point) {
+            if (point.y == (maze.length - 1)) {
                 isFinished = true;
-                finishCoor = {
-                    x: step.x,
-                    y: step.y
-                };
+                //exitCoord = {
+                //    x: point.x,
+                //    y: point.y
+                //};
                 return false;
             }
-            for (var scanX = ((step.x || 1) - 1); scanX <= (step.x < (maze[0].length - 1) ? step.x + 1 : (maze[0].length - 1)); scanX++) {
-                isNotWall = maze[step.y][scanX] != WALL;
-                isNotMe = maze[step.y][scanX] != CURRENT;
-                isEmpty = maze[step.y][scanX] <= 0;
-                if (isNotWall && isNotMe && isEmpty) {
-                    tmpNextSteps.push({
-                        x: scanX,
-                        y: step.y
+            nextWavePoints = getNextWavePoints(point, mazeWidth, mazeHeight);
+            nextWavePoints.forEach(function (nextPoint) {
+                if (isValidNextWavePoint(maze, nextPoint.x, nextPoint.y)) {
+                    nextPoints.push({
+                        x: nextPoint.x,
+                        y: nextPoint.y
                     });
-                    maze[step.y][scanX] = waveNum + 1;
+                    maze[nextPoint.y][nextPoint.x] = nextWaveNum;
                 }
-            }
-            for (var scanY = ((step.y || 1) - 1); scanY <= (step.y < (maze.length - 1) ? step.y + 1 : (maze.length - 1)); scanY++) {
-                isNotWall = maze[scanY][step.x] != WALL;
-                isNotMe = maze[scanY][step.x] != CURRENT;
-                isEmpty = maze[scanY][step.x] <= 0;
-                if (isNotWall && isNotMe && isEmpty) {
-                    tmpNextSteps.push({
-                        x: step.x,
-                        y: scanY
-                    });
-                    maze[scanY][step.x] = waveNum + 1;
-                }
-            }
+            });
         });
-        waveNum++;
+        currentWavewNum++;
 
         document.querySelector('.outer').innerHTML = '';
         document.querySelector('.outer').appendChild(
@@ -51,8 +69,8 @@
 
         if (!isFinished) {
             setTimeout(function () {
-                checkSteps(tmpNextSteps, maze, finishCoor, waveNum);
-            }, 200);
+                analyzePoints(maze, mazeWidth, mazeHeight, nextPoints, currentWavewNum);
+            }, 100);
         }
     }
 
@@ -65,14 +83,13 @@
      * @returns {[number, number][]} маршрут к выходу представленный списоком пар координат
      */
     function solution(maze, x, y) {
-        var startCoord = [{x: x, y: y}];
-        var finishCoor = null;
-        var startStep = 1;
+        var startPoints = [{x: x, y: y}];
+        var startWave = 1;
         var mazeHeight = (maze.length - 1);
         var mazeWidth = (maze[0].length - 1);
         maze[y][x] = 1;
 
-        checkSteps(startCoord, maze, finishCoor, startStep);
+        analyzePoints(maze, mazeWidth, mazeHeight, startPoints, startWave);
 
         return [];
     }
