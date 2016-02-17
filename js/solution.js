@@ -5,16 +5,16 @@
     var CURRENT = root.maze.CURRENT;
 
     var EXIT_COORD = null;
-    var LAST_WAVE_NUM = 0;
+    var END_WAVE_NUM = 0;
     var PATH_TO_EXIT = [];
 
     var WAVE_GEN_FINISHED = false;
     var PATH_FIND_FINISHED = false;
 
     var NEXT_WAVE_POINTS;
-    var PREV_WAVE_POINT;
+    var CURRENT_WAVE_POINT;
 
-    function getNextWavePoints(currentPoint, mazeWidth, mazeHeight) {
+    function getNearbyWavePoints(currentPoint, mazeWidth, mazeHeight) {
         var result = [];
         /**
          * Вычисляем точки по горизонтали
@@ -45,10 +45,6 @@
         return isNotWall && isNotMe && isEmpty;
     }
 
-    function isValidPrevWavePoint(maze, x, y, prevWaveNum) {
-        return maze[y][x] == prevWaveNum;
-    }
-
     function generateWave(maze, mazeWidth, mazeHeight, points, currentWavewNum) {
         NEXT_WAVE_POINTS = [];
         var nextWaveNum = currentWavewNum + 1;
@@ -57,10 +53,10 @@
             if (point.y == (maze.length - 1)) {
                 WAVE_GEN_FINISHED = true;
                 EXIT_COORD = [point.x, point.y];
-                LAST_WAVE_NUM = currentWavewNum;
+                END_WAVE_NUM = currentWavewNum;
                 return false;
             }
-            nextWavePoints = getNextWavePoints(point, mazeWidth, mazeHeight);
+            nextWavePoints = getNearbyWavePoints(point, mazeWidth, mazeHeight);
             nextWavePoints.forEach(function (nextPoint) {
                 if (isValidNextWavePoint(maze, nextPoint.x, nextPoint.y)) {
                     NEXT_WAVE_POINTS.push({
@@ -86,17 +82,19 @@
     }
 
     function findPrevWave(maze, mazeWidth, mazeHeight, currentPoint, prevWaveNum) {
-        var nextWavePoints = getNextWavePoints(currentPoint, mazeWidth, mazeHeight);
+        var waveNum;
+        var nextWavePoints = getNearbyWavePoints(currentPoint, mazeWidth, mazeHeight);
         nextWavePoints.forEach(function (nextPoint) {
-            if (isValidPrevWavePoint(maze, nextPoint.x, nextPoint.y, prevWaveNum)) {
-                PREV_WAVE_POINT = {
+            waveNum = maze[nextPoint.y][nextPoint.x];
+            if (waveNum == prevWaveNum) {
+                CURRENT_WAVE_POINT = {
                     x: nextPoint.x,
                     y: nextPoint.y
                 };
                 return false;
             }
         });
-        return [PREV_WAVE_POINT.x, PREV_WAVE_POINT.y];
+        return [CURRENT_WAVE_POINT.x, CURRENT_WAVE_POINT.y];
     }
 
     /**
@@ -108,34 +106,36 @@
      * @returns {[number, number][]} маршрут к выходу представленный списоком пар координат
      */
     function solution(maze, x, y) {
+        var mazeHeight = (maze.length - 1);
+        var mazeWidth = (maze[0].length - 1);
 
         /**
          * Ищем выход по волновому алгоритму
          */
         NEXT_WAVE_POINTS = [{x: x, y: y}];
-        var startWaveNum = 1;
-        var mazeHeight = (maze.length - 1);
-        var mazeWidth = (maze[0].length - 1);
-        maze[y][x] = 1;
+        var waveNum = 1;
+        maze[y][x] = waveNum;
         while (!WAVE_GEN_FINISHED) {
-            generateWave(maze, mazeWidth, mazeHeight, NEXT_WAVE_POINTS, startWaveNum);
-            startWaveNum++;
+            generateWave(maze, mazeWidth, mazeHeight, NEXT_WAVE_POINTS, waveNum);
+            waveNum++;
         }
+        NEXT_WAVE_POINTS = null;
 
         /**
          * Определяем путь до входа
          */
         PATH_TO_EXIT.push(EXIT_COORD);
-        PREV_WAVE_POINT = {
+        CURRENT_WAVE_POINT = {
             x: EXIT_COORD[0],
             y: EXIT_COORD[1]
         };
         while (!PATH_FIND_FINISHED) {
-            PATH_TO_EXIT.push(findPrevWave(maze, mazeWidth, mazeHeight, PREV_WAVE_POINT, LAST_WAVE_NUM--));
-            if (PREV_WAVE_POINT.x == x && PREV_WAVE_POINT.y == y) {
+            PATH_TO_EXIT.push(findPrevWave(maze, mazeWidth, mazeHeight, CURRENT_WAVE_POINT, END_WAVE_NUM--));
+            if (CURRENT_WAVE_POINT.x == x && CURRENT_WAVE_POINT.y == y) {
                 PATH_FIND_FINISHED = true;
             }
         }
+        CURRENT_WAVE_POINT = null;
 
         return PATH_TO_EXIT.reverse();
     }
