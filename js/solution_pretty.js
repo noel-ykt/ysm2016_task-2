@@ -6,7 +6,6 @@
 
     var EXIT_COORD = null;
     var END_WAVE_NUM = 0;
-    var PATH_TO_EXIT = [];
 
     var WAVE_GEN_FINISHED = false;
     var PATH_FIND_FINISHED = false;
@@ -45,7 +44,7 @@
         return isNotWall && isNotMe && isEmpty;
     }
 
-    function generateWave(maze, mazeWidth, mazeHeight, points, currentWavewNum) {
+    function generateWave(maze, mazeWidth, mazeHeight, points, currentWavewNum, speed) {
         NEXT_WAVE_POINTS = [];
         var nextWaveNum = currentWavewNum + 1;
         var nextWavePoints;
@@ -67,34 +66,60 @@
                 }
             });
         });
-        //currentWavewNum++;
+        currentWavewNum++;
 
-        //document.querySelector('.outer').innerHTML = '';
-        //document.querySelector('.outer').appendChild(
-        //    root.maze.render_pretty(maze)
-        //);
+        document.querySelector('.outer').innerHTML = '';
+        document.querySelector('.outer').appendChild(
+            root.maze.render_pretty(maze)
+        );
 
-        //if (!isFinished) {
-        //    setTimeout(function () {
-        //        generateWave(maze, mazeWidth, mazeHeight, nextPoints, currentWavewNum);
-        //    }, 100);
-        //}
+        if (!WAVE_GEN_FINISHED) {
+            setTimeout(function () {
+                generateWave(maze, mazeWidth, mazeHeight, NEXT_WAVE_POINTS, currentWavewNum, speed);
+            }, speed);
+        } else {
+            /**
+             * Определяем путь до входа
+             */
+            CURRENT_WAVE_POINT = {
+                x: EXIT_COORD[0],
+                y: EXIT_COORD[1]
+            };
+            maze[CURRENT_WAVE_POINT.y][CURRENT_WAVE_POINT.x] = CURRENT;
+            findPrevWave(maze, mazeWidth, mazeHeight, CURRENT_WAVE_POINT, END_WAVE_NUM--, speed);
+        }
     }
 
-    function findPrevWave(maze, mazeWidth, mazeHeight, currentPoint, prevWaveNum) {
+    function findPrevWave(maze, mazeWidth, mazeHeight, currentPoint, prevWaveNum, speed) {
         var waveNum;
         var nextWavePoints = getNearbyWavePoints(currentPoint, mazeWidth, mazeHeight);
         nextWavePoints.forEach(function (nextPoint) {
             waveNum = maze[nextPoint.y][nextPoint.x];
             if (waveNum == prevWaveNum) {
+                maze[currentPoint.y][currentPoint.x] = PATH;
                 CURRENT_WAVE_POINT = {
                     x: nextPoint.x,
                     y: nextPoint.y
                 };
+                maze[nextPoint.y][nextPoint.x] = CURRENT;
                 return false;
             }
         });
-        return [CURRENT_WAVE_POINT.x, CURRENT_WAVE_POINT.y];
+
+        document.querySelector('.outer').innerHTML = '';
+        document.querySelector('.outer').appendChild(
+            root.maze.render_pretty(maze)
+        );
+
+        if (prevWaveNum == 1) {
+            PATH_FIND_FINISHED = true;
+        }
+
+        if (!PATH_FIND_FINISHED) {
+            setTimeout(function () {
+                findPrevWave(maze, mazeWidth, mazeHeight, CURRENT_WAVE_POINT, END_WAVE_NUM--, speed);
+            }, speed);
+        }
     }
 
     /**
@@ -105,7 +130,7 @@
      * @param {number} y координата точки старта по оси Y
      * @returns {[number, number][]} маршрут к выходу представленный списоком пар координат
      */
-    function solution(maze, x, y) {
+    function solution(maze, x, y, speed) {
         var mazeHeight = (maze.length - 1);
         var mazeWidth = (maze[0].length - 1);
 
@@ -115,29 +140,9 @@
         NEXT_WAVE_POINTS = [{x: x, y: y}];
         var waveNum = 1;
         maze[y][x] = waveNum;
-        while (!WAVE_GEN_FINISHED) {
-            generateWave(maze, mazeWidth, mazeHeight, NEXT_WAVE_POINTS, waveNum);
-            waveNum++;
-        }
-        NEXT_WAVE_POINTS = null;
+        generateWave(maze, mazeWidth, mazeHeight, NEXT_WAVE_POINTS, waveNum, speed);
 
-        /**
-         * Определяем путь до входа
-         */
-        PATH_TO_EXIT.push(EXIT_COORD);
-        CURRENT_WAVE_POINT = {
-            x: EXIT_COORD[0],
-            y: EXIT_COORD[1]
-        };
-        while (!PATH_FIND_FINISHED) {
-            PATH_TO_EXIT.push(findPrevWave(maze, mazeWidth, mazeHeight, CURRENT_WAVE_POINT, END_WAVE_NUM--));
-            if (CURRENT_WAVE_POINT.x == x && CURRENT_WAVE_POINT.y == y) {
-                PATH_FIND_FINISHED = true;
-            }
-        }
-        CURRENT_WAVE_POINT = null;
-
-        return PATH_TO_EXIT.reverse();
+        return [];
     }
 
     root.maze.solution = solution;

@@ -84,7 +84,7 @@
         return containerElem;
     }
 
-    function render_li(maze) {
+    function render_pretty(maze) {
         var containerElem = element('div', 'maze'),
             rowElem,
             cellElem,
@@ -105,7 +105,12 @@
                     case WALL:
                         type = 'wall';
                         break;
-
+                    case PATH:
+                        type = 'path';
+                        break;
+                    case CURRENT:
+                        type = 'current';
+                        break;
                     default:
                         type = undefined;
                 }
@@ -129,5 +134,5 @@
     }
 
     root.maze.render = render;
-    root.maze.render_li = render_li;
+    root.maze.render_pretty = render_pretty;
 })(this);
